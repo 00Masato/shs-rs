@@ -5,4 +5,10 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "shs"
+path = "src/lib.rs"
+
 [dependencies]
+clap = "4.0.32"
+signal-hook = "0.3.14"
