@@ -5,5 +5,5 @@ fn main() -> std::io::Result<()> {
     // Shs::new(
     //
     // ).bind()?.run()
-    Server::new().run()
+    Server::bind(("127.0.0.1", 8080)).run()
 }
