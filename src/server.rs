@@ -1,8 +1,9 @@
+use std::fs::File;
+use std::io::prelude::*;
+use std::net::{TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{fmt, io, net, thread, time};
-use std::net::{TcpStream, TcpListener};
-use std::io::prelude::*;
 
 use signal_hook::consts::TERM_SIGNALS;
 use signal_hook::flag;
@@ -14,9 +15,7 @@ pub struct Server {
 impl Server {
     pub fn bind<A: net::ToSocketAddrs>(addrs: A) -> Self {
         let listener = TcpListener::bind(addrs).unwrap();
-        Server {
-            listener,
-        }
+        Server { listener }
     }
 
     pub fn run(&self) -> Result<(), io::Error> {
@@ -48,6 +47,14 @@ impl Server {
     fn handle_connection(&self, mut stream: TcpStream) {
         let mut buffer = [0; 1024];
         stream.read(&mut buffer).unwrap();
+
+        let mut file = File::open("index.html").unwrap();
+
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        let response = format!("HTTP/1.1 200 OK\r\n\r\n{}", contents);
+        stream.write(response.as_bytes()).unwrap();
+        stream.flush().unwrap();
         println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
     }
 }
