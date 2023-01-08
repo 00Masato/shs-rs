@@ -2,24 +2,35 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::{fmt, io, net, thread, time};
 
 use signal_hook::consts::TERM_SIGNALS;
 use signal_hook::flag;
 
+use crate::thread_pool::ThreadPool;
+
+pub struct ServerInner {
+    listener: Mutex<TcpListener>,
+}
+
 pub struct Server {
-    listener: TcpListener,
+    inner: Arc<ServerInner>,
 }
 
 impl Server {
     pub fn bind<A: net::ToSocketAddrs>(addrs: A) -> Self {
         let listener = TcpListener::bind(addrs).unwrap();
-        Server { listener }
+        Server {
+            inner: Arc::new(ServerInner {
+                listener: Mutex::new(listener),
+            }),
+        }
     }
 
-    pub fn run(&self) -> Result<(), io::Error> {
+    pub fn run(&mut self) -> Result<(), io::Error> {
         println!("shs HTTP server start!");
+
         // let term = Arc::new(AtomicBool::new(false));
         //
         // for sig in TERM_SIGNALS {
@@ -27,9 +38,14 @@ impl Server {
         //     flag::register(*sig, Arc::clone(&term))?;
         // }
 
-        for stream in self.listener.incoming() {
+        let pool = ThreadPool::new(4);
+
+        for stream in self.inner.listener.lock().unwrap().incoming() {
             let stream = stream.unwrap();
-            self.handle_connection(stream);
+            let local_self = self.inner.clone();
+            pool.execute(move || {
+                local_self.handle_connection(stream);
+            });
         }
         // while !term.load(Ordering::Relaxed) {
         //     println!("working...");
@@ -43,7 +59,9 @@ impl Server {
         println!("Exited cleanly");
         Ok(())
     }
+}
 
+impl ServerInner {
     fn handle_connection(&self, mut stream: TcpStream) {
         let mut buffer = [0; 1024];
         stream.read(&mut buffer).unwrap();
