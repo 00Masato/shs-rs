@@ -40,7 +40,7 @@ impl Server {
 
         let pool = ThreadPool::new(4);
 
-        for stream in self.inner.listener.lock().unwrap().incoming() {
+        for stream in self.inner.listener.lock().unwrap().incoming().take(2) {
             let stream = stream.unwrap();
             let local_self = self.inner.clone();
             pool.execute(move || {
