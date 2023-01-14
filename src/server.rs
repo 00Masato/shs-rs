@@ -69,9 +69,9 @@ impl ServerInner {
         let get = b"GET / HTTP/1.1\r\n";
 
         let (status_line, filename) = if buffer.starts_with(get) {
-            ("HTTP/1.1 200 OK\r\n\r\n", "index.html")
+            ("HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n", "index.html")
         } else {
-            ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "404.html")
+            ("HTTP/1.1 404 NOT FOUND\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n", "404.html")
         };
 
         let mut file = File::open(filename).unwrap();
