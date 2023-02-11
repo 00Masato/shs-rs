@@ -70,17 +70,38 @@ impl ServerInner {
         let post = b"POST / HTTP/1.1\r\n";
         let put = b"PUT / HTTP/1.1\r\n";
         let delete = b"DELETE / HTTP/1.1\r\n";
+        let get_favicon = b"GET /favicon.ico HTTP/1.1\r\n";
 
         let (status_line, filename) = if buffer.starts_with(get) {
-            ("HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n", "public/index.html")
+            (
+                "HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n",
+                "public/index.html",
+            )
         } else if buffer.starts_with(post) {
-            ("HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n", "public/post.html")
+            (
+                "HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n",
+                "public/post.html",
+            )
         } else if buffer.starts_with(put) {
-            ("HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n", "public/put.html")
+            (
+                "HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n",
+                "public/put.html",
+            )
         } else if buffer.starts_with(delete) {
-            ("HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n", "public/delete.html")
+            (
+                "HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n",
+                "public/delete.html",
+            )
+        } else if buffer.starts_with(get_favicon) {
+            (
+                "HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n",
+                "public/index.html",
+            )
         } else {
-            ("HTTP/1.1 404 NOT FOUND\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n", "404.html")
+            (
+                "HTTP/1.1 404 NOT FOUND\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n",
+                "404.html",
+            )
         };
 
         let mut file = File::open(filename).unwrap();
