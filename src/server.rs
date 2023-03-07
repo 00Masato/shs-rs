@@ -4,6 +4,7 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::{fmt, io, net, thread, time};
+use std::sync::mpsc::channel;
 
 use signal_hook::consts::TERM_SIGNALS;
 use signal_hook::flag;
@@ -31,30 +32,33 @@ impl Server {
     pub fn run(&mut self) -> Result<(), io::Error> {
         println!("shs HTTP server start!");
 
-        // let term = Arc::new(AtomicBool::new(false));
-        //
-        // for sig in TERM_SIGNALS {
-        //     flag::register_conditional_shutdown(*sig, 1, Arc::clone(&term))?;
-        //     flag::register(*sig, Arc::clone(&term))?;
-        // }
-
         let pool = ThreadPool::new(4);
+
+        let (tx, rx) = channel();
+
+        ctrlc::set_handler(move || tx.send(()).expect("Could not send signal on channel."))
+            .expect("Error setting Ctrl-C handler");
 
         for stream in self.inner.listener.lock().unwrap().incoming() {
             let stream = stream.unwrap();
             let local_self = self.inner.clone();
+
             pool.execute(move || {
                 local_self.handle_connection(stream);
             });
+
+            match rx.try_recv() {
+                Ok(_) => break,
+                Err(_) => continue,
+            }
         }
-        // while !term.load(Ordering::Relaxed) {
-        //     println!("working...");
-        //     thread::sleep(time::Duration::from_secs(1));
-        // }
-        // println!(
-        //     "\nReceived kill signal. Wait 10 seconds, or hit Ctrl+C again to exit immediately."
-        // );
-        // thread::sleep(time::Duration::from_secs(1));
+
+
+
+        println!(
+            "\nReceived kill signal. Wait 10 seconds, or hit Ctrl+C again to exit immediately."
+        );
+        thread::sleep(time::Duration::from_secs(1));
 
         println!("Exited cleanly");
         Ok(())
